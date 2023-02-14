@@ -1,0 +1,350 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>小瑞瑞纠结症专用转盘</title>
+		<script src="https://cdn.staticfile.org/jquery/3.2.1/jquery.min.js"></script>
+		<style>
+			@keyframes turnZ{
+				/* 指针旋转的动画，为了使用insertRule方法时turnZ的index值固定为0，此style位置不可改变 */
+				from {
+					transform:rotateZ(0deg);
+				}
+				to {
+					transform:rotateZ(405deg);
+				}
+			}
+			
+			.turnZ{
+				/* 固定位置 */
+				animation: turnZ 1s forwards;
+			}
+			
+			.triangle{
+				width: 0;
+				height: 0;
+				/* overflow: hidden; */
+			}
+			
+			.triangle span{
+				position: absolute;
+				font-size: 30px;
+				writing-mode：tb-rl
+				font-weight: 600;
+				margin-left: -15px;
+			}
+			
+			.m-btn{
+				cursor: pointer;
+				padding: .25rem .5rem;
+				border: 1px solid;
+			}
+			
+			.check{
+				border: 1px solid rgba(0,0,0,.2);
+				padding: .25rem .5rem;
+				border-radius: 3px;
+				width: 50%;
+			}
+			
+			#zhuanpan{
+				position: fixed;
+				border-radius: 200%;
+				position: relative;
+				
+			}
+			
+			#zhizhen{
+				width: 20px;
+				height: 400px;
+				box-sizing: border-box;
+				position: absolute;
+				top: calc(50% - 298px);
+				left: calc(50% - 10px);
+				display: none;
+			}
+			
+			#zhen{
+				width: 20px;
+				height: 200px;
+				border-bottom: 200px solid;
+				border-bottom-color:red;
+				border-left: 10px solid transparent;
+				border-right:10px solid transparent;
+			}
+			
+			#zhen2{
+				width: 20px;
+				height: 60px;
+				border-top: 30px solid ;
+				border-top-color:red;
+				border-left: 10px solid transparent;
+				border-right:10px solid transparent;
+			}
+			
+			#zhankai{
+				width: 40px;height: 40px;background-color: azure;
+				position: absolute;
+				right: -41px;
+				bottom: 0;
+				cursor: pointer;
+				font-size: 26px;
+				font-weight: 800;
+				text-align: center;
+				box-shadow: 2px 2px 4px 4px rgba(0,0,0,.1);
+			}
+			
+			#menu{
+				position: fixed;
+				border: 1px solid;
+				left: -900px;
+				width:900px;
+				background-color:white;
+			}
+			
+			.slidein{
+				animation: slidein 1s forwards;
+			}
+			
+			.slideout{
+				animation: slideout 1s forwards;
+			}
+			
+			@keyframes slidein{
+				from {
+					left: -900px;
+				}
+				to {
+					left: 0;
+				}
+			}
+			
+			@keyframes slideout{
+				from {
+					left: 0;
+				}
+				to {
+					left: -900px;
+				}
+			}
+			
+			.d-flex {
+			    display: -ms-flexbox!important;
+			    display: flex!important;
+			}
+			
+			.flex-column {
+			    -ms-flex-direction: column!important;
+			    flex-direction: column!important;
+			}
+			
+			.align-items-center {
+			    -ms-flex-align: center!important;
+			    align-items: center!important;
+			}
+			
+			.w-100 {
+			    width: 100%!important;
+			}
+			
+			.mr-2, .mx-2 {
+			    margin-right: .5rem!important;
+			}
+			
+			button, input {
+			    overflow: visible;
+			}
+			
+			button, input, optgroup, select, textarea {
+			    margin: 0;
+			    font-family: inherit;
+			    font-size: inherit;
+			    line-height: inherit;
+			}
+			
+			.flex-wrap {
+			    -ms-flex-wrap: wrap!important;
+			    flex-wrap: wrap!important;
+			}
+			
+			.w-50 {
+			    width: 50%!important;
+			}
+			
+			*, ::after, ::before {
+			    box-sizing: border-box;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="d-flex flex-column">
+			<div class="d-flex w-100" style="clip-path: circle(400px at 50% 50%);">
+				<div id="zhuanpan"></div>
+				<div id="zhizhen">
+					<div id="zhen"></div>
+					<div id="zhen2"></div>
+				</div>
+			</div>
+			<div id="menu">
+				<div id="zhankai">🤚打开</div>
+				<div class="d-flex">
+					<button onclick="addCheck()" class="m-btn w-50">添加</button>
+					<button onclick="creatCircle()" class="m-btn w-50">生成</button>
+				</div>
+				<div id="checks" class="d-flex flex-wrap"></div>
+			</div>
+			<div class="d-flex flex-column" style="width: 120px;text-align: center;position: fixed;top: 50%;left: 0;">
+				<buttun onclick="startTurn()" class="m-btn">开始</buttun>
+				<buttun onclick="reset()" class="m-btn">复位</buttun>
+			</div>
+		</div>
+		<script type="text/javascript">
+			var h = 400,
+				start = 0,
+				end = 0;
+			var defaults = [{'text':'零食','rate':1},{'text':'杂粮煎饼','rate':1},{'text':'面','rate':1}];
+
+			$(function() {
+				$('#zhuanpan').css({
+					'width': 2 * h
+				});
+				$('#zhuanpan').css({
+					'height': 2 * h
+				});
+				$('#zhuanpan').css({
+					'margin-left': 'calc(50% - ' + h + 'px)'
+				});
+				$('#zhankai').click(function() {
+					if ($('#menu').hasClass('slidein')) {
+						$('#menu').removeClass('slidein');
+						$('#menu').addClass('slideout');
+						$(this).text('🤚打开');
+					} else {
+						$('#menu').removeClass('slideout');
+						$('#menu').addClass('slidein');
+						$(this).text('👈关闭');
+					}
+				})
+				defaults.forEach(function(item,index){
+					let a =
+						'<div class="check d-flex align-items-center">'+
+						'名称：<input type="" class="item-name mr-2" id="" value="'+item['text']+'" />'+
+						'概率：<select class="item-sel m-btn" value="'+item['rate']+'"><option value="1">1</option>'+
+						'<option value="2">2</option><option value="3">3</option></select>'+
+						'<buttun onclick="delCheck(this)" class="m-btn">删除</buttun></div>';
+					$('#checks').append(a)
+				})
+				creatCircle();
+			})
+
+			function addCheck() {
+				let check =
+					'<div class="check d-flex align-items-center">名称：<input type="" class="item-name mr-2" id="" value="" />概率：<select class="item-sel m-btn"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select><buttun onclick="delCheck(this)" class="m-btn">删除</buttun></div>';
+				$('#checks').append(check);
+			}
+
+			function delCheck(thiz) {
+				$(thiz).parent('.check').remove()
+			}
+
+			function creatCircle() {
+				$('#zhuanpan').empty();
+				let ins = $('.item-name'),
+					iss = $('.item-sel');
+				let num = 0;
+				iss.each(function(index, item) {
+					num += parseInt($(item).val());
+				})
+				let deg = Math.PI / num;
+				let deg2 = 360 / num;
+				let du = 360 / num
+				console.log(du)
+				console.log(Math.tan(deg))
+				let items = [];
+				let times = 0;
+				ins.each(function(index, item) {
+					items.push({
+						'text': $(item).val() ? $(item).val() : '谢谢惠顾',
+						'rate': parseInt($(iss[index]).val()),
+						'width': h * Math.tan(deg * $(iss[index]).val()),
+						'color': getColor(),
+						'time': times,
+					});
+					if (index < ins.length - 1) {
+						times += (parseInt($(iss[index]).val()) + parseInt($(iss[index + 1]).val())) / 2;
+					}
+				})
+				items.forEach(function(item, index) {
+					$('#zhuanpan').append('<div class="triangle" style="border-bottom: ' + h + 'px solid;border-bottom-color:' +
+						item['color'] +
+						';border-left: ' + item['width'] + 'px solid transparent;border-right: ' + item['width'] +
+						'px solid transparent;position:absolute;" ><span>' +
+						item['text'] +
+						'</span></div>')
+				})
+				$('.triangle').each(function(index, item) {
+					let jiaodu = items[index]['time'] * du;
+					Math.tan((180 - jiaodu) / 180 * Math.PI);
+					let x = Math.sin((180 - jiaodu) / 180 * Math.PI) * 200;
+					let y = Math.cos((180 - jiaodu) / 180 * Math.PI) * 200;
+					$(item).css({
+						'transform': 'rotate(' + jiaodu + 'deg)'
+					});
+					$(item).css({
+						'bottom': h / 2 + y
+					});
+					$(item).css({
+						'left': h - items[index]['width'] - x
+					});
+				})
+
+				$('.triangle span').each(function(index, item) {
+					let hi = $(item).height();
+					$(item).css({
+						'top': (h - hi - 20) + 'px'
+					})
+				})
+				$('#zhizhen').show()
+			}
+
+			function getColor() {
+				let r = Math.floor(Math.random() * 255);
+				let g = Math.floor(Math.random() * 255);
+				let b = Math.floor(Math.random() * 255);
+				return 'rgba(' + r + ',' + g + ',' + b + ',0.5)'
+			}
+
+			function startTurn() {
+				$('#zhizhen').removeClass('turnZ');
+				setTimeout(function() {
+					let style = document.styleSheets[0];
+					let deg = Math.floor(Math.random() * 360) + (Math.floor(Math.random() * 3) + 5) * 360;
+					// 删除第0个css
+					style.deleteRule(0);
+					// 插入新的css到第0的位置
+					end += deg
+					style.insertRule("@keyframes turnZ {from {transform:rotateZ(" + start + "deg);}to{transform: rotateZ(" + end +
+						"deg);}}", 0);
+					let times = (parseInt(deg / 360) > 6 ? 5 : parseInt(deg / 360)) + (Math.random() > 0.5 ? Math.random() * 2 : -
+						Math.random() * 2)
+					$('#zhizhen').css({
+						'transform': 'rotateZ(' + end + 'deg)'
+					})
+					style.deleteRule(1);
+					style.insertRule('.turnZ{animation: turnZ ' + times + 's forwards;}', 1);
+					$('#zhizhen').addClass('turnZ');
+					start += deg
+				}, 100)
+			}
+
+			function reset() {
+				$('#zhizhen').removeClass('turnZ');
+				start = 0;
+				end = 0;
+				$('#zhizhen').css({
+					'transform': 'rotateZ(0deg)'
+				})
+			}
+		</script>
+	</body>
+</html>
